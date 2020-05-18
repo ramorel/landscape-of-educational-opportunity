@@ -4,7 +4,6 @@ library(shinycssloaders)
 library(shinydashboard)
 library(shinyWidgets)
 library(tidyverse)
-library(dbplyr)
 library(educationdata)
 library(ggminthemes)
 library(glue)
@@ -13,13 +12,6 @@ library(tigris)
 library(leaflet)
 library(sf)
 library(plotly)
-
-
-
-path <- paste0(str_extract(here::here(), "/[A-Za-z]+/[A-Za-z0-9]+/"), 
-               "ccd_2001-2016.sqlite")
-
-ccd <- DBI::dbConnect(RSQLite::SQLite(), path)
 
 # Modify the ggplot theme!
 theme_set(
@@ -34,11 +26,12 @@ theme_set(
               legend.title = element_text(size = 14))
 )
 
+# DATA ----------------------
+
 # Table of districts leaid, name, fips, and year
-dir_dat <- tbl(ccd, "ccd_district_dir") %>% 
-    filter(year %in% 2011:2016, number_of_schools > 1) %>% 
+dir_dat <- read_csv("dir_dat.csv") %>% 
+    filter(year %in% 2011:2016) %>% 
     select(year:fips) %>% 
-    collect() %>% 
     mutate(lea_name = str_to_title(lea_name),
            leaid = as.numeric(leaid))
 
@@ -48,8 +41,20 @@ dir_dat <- dir_dat %>% filter(fips %in% states)
 seda_math <- read_csv("seda_math.csv") %>% 
     mutate(leaidC = as.numeric(leaidC)) 
 
+### State school directory
+fs <- dir(pattern = "full_st_dir")
+
+full_st_dir <- map_dfr(fs, read_csv)
+
+### State enrollment
+fs <- dir(pattern = "full_st_enroll")
+
+full_st_enroll <- map_dfr(fs, read_csv)
+
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
+    
+    title = "Educational opportunity",
 
     # HEADER ----
     
@@ -145,7 +150,7 @@ server = function(input, output) {
     output$district_selector = renderUI({
         
         st_dir <- 
-            tbl(ccd, "ccd_school_dir") %>% 
+            full_st_dir %>% 
             filter(year == !!input$year,
                    fips == !!input$state,
                    school_level %in% c("Primary")) %>% 
@@ -216,14 +221,14 @@ server = function(input, output) {
     st_dat <- reactive({
         
         st_dir <- 
-            tbl(ccd, "ccd_school_dir") %>% 
+            full_st_dir %>% 
             filter(year == !!input$year,
                    fips == !!input$state,
                    school_level %in% c("Primary")) %>% 
             pull(ncessch) %>% 
             as.numeric()
         
-        tbl(ccd, "ccd_school_enroll") %>% 
+        full_st_enroll %>% 
             mutate(leaid = as.numeric(leaid),
                    ncessch = as.numeric(ncessch)) %>% 
             filter(year == !!input$year,
@@ -231,8 +236,7 @@ server = function(input, output) {
                    !is.na(enrollment),
                    !race %in% c("Two or more races", "Unknown"),
                    ncessch %in% st_dir) %>%
-            select(ncessch, leaid, race, enrollment) %>% 
-            collect()
+            select(ncessch, leaid, race, enrollment)
         
     })
     
@@ -250,15 +254,14 @@ server = function(input, output) {
     ## District-wide demographic data
     sch_dat <- reactive({
         
-        tbl(ccd, "ccd_school_enroll") %>% 
+        full_st_enroll %>% 
             mutate(leaid = as.numeric(leaid),
                    ncessch = as.numeric(ncessch)) %>% 
             filter(year == !!input$year,
                    leaid == !!lea_id(),
                    !is.na(enrollment),
                    !race %in% c("Two or more races", "Unknown")) %>% 
-            select(year:ncessch, fips, leaid, race, enrollment) %>% 
-            collect()
+            select(year:ncessch, fips, leaid, race, enrollment) 
         
     })
     
