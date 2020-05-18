@@ -29,7 +29,7 @@ theme_set(
 # DATA ----------------------
 
 # Table of districts leaid, name, fips, and year
-dir_dat <- read_csv("dir_dat.csv") %>% 
+dir_dat <- read_csv("data/dir_dat.csv") %>% 
     filter(year %in% 2011:2016) %>% 
     select(year:fips) %>% 
     mutate(lea_name = str_to_title(lea_name),
@@ -38,16 +38,16 @@ dir_dat <- read_csv("dir_dat.csv") %>%
 states <- state.name[-11]
 dir_dat <- dir_dat %>% filter(fips %in% states)
 
-seda_math <- read_csv("seda_math.csv") %>% 
+seda_math <- read_csv("data/seda_math.csv") %>% 
     mutate(leaidC = as.numeric(leaidC)) 
 
 ### State school directory
-fs <- dir(pattern = "full_st_dir")
+fs <- dir(path = "data", pattern = "full_st_dir")
 
 full_st_dir <- map_dfr(fs, read_csv)
 
 ### State enrollment
-fs <- dir(pattern = "full_st_enroll")
+fs <- dir(path = "data", pattern = "full_st_enroll")
 
 full_st_enroll <- map_dfr(fs, read_csv)
 
