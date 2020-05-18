@@ -56,6 +56,7 @@ ui <- dashboardPage(
     
     title = "Educational opportunity",
 
+    
     # HEADER ----
     
     dashboardHeader(
