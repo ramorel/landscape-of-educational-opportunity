@@ -17,13 +17,13 @@ library(plotly)
 theme_set(
     theme_minima() +
         theme(text = element_text(color = "#471323"),
-              plot.title = element_text(size = 18),
-              plot.subtitle = element_text(size = 16),
+              plot.title = element_text(size = 16),
+              plot.subtitle = element_text(size = 14),
               plot.caption = element_text(size = 12),
-              axis.text.x = element_text(size = 14),
-              axis.text.y = element_text(size = 14),
-              legend.text = element_text(size = 12),
-              legend.title = element_text(size = 14))
+              axis.text.x = element_text(size = 12),
+              axis.text.y = element_text(size = 12),
+              legend.text = element_text(size = 10),
+              legend.title = element_text(size = 12))
 )
 
 # DATA ----------------------
@@ -54,7 +54,7 @@ full_st_enroll <- map_dfr(fs, read_csv)
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
     
-    title = "Educational opportunity",
+    title = "Opp-App",
 
     
     # HEADER ----
@@ -357,12 +357,14 @@ server = function(input, output) {
             group_by(leaid, race) %>% 
             summarize(total = sum(enrollment, na.rm = TRUE)) %>% 
             ungroup() %>% 
-            mutate(prop = total/sum(total)) %>% 
-            ggplot(aes(x = prop, y = factor(leaid))) +
-            geom_col(aes(fill = race), width = 0.5) +
+            mutate(Percent = 100 * (total/sum(total)),
+                   District = input$district,
+                   Race = race) %>% 
+            ggplot(aes(x = Percent, y = District)) +
+            geom_col(aes(fill = Race), width = 0.5) +
             labs(x = "", y = "",
                  caption = "Data from the National Center for Education Statistics, accessed through the Urban Institute's API") +
-            scale_fill_viridis_d(name = "Race/Ethnicity") +
+            scale_fill_viridis_d(name = "") +
             guides(fill = guide_legend(ncol = 2)) +
             theme(legend.position = "bottom",
                   axis.text.y = element_blank(),
@@ -656,14 +658,14 @@ server = function(input, output) {
                 icon = icon("map"),
                 color = "purple"
                 )
-        } else if (seg_ind > (d_mn_seg + 0.01)) {
+        } else if (seg_ind > (d_mn_seg + 0.05)) {
             valueBox(
                 value = tags$p("Above average", style = "font-family: 'Permanent Marker'; font-size: 100%;"),
                 subtitle = "Segregation", 
                 icon = icon("map"),
                 color = "red"
             ) 
-            } else if (seg_ind < (d_mn_seg - 0.01)) {
+            } else if (seg_ind < (d_mn_seg - 0.05)) {
                 valueBox(
                     value = tags$p("Below average", style = "font-family: 'Permanent Marker'; font-size: 100%;"),
                     subtitle = "Segregation", 
